@@ -9,12 +9,13 @@ import './css/main.css'
  * vuex
  * auto-import all modules and prepare shared store
  */
-const vuexModules = require.context('./vue/store/', true, /\.js$/)
+const vuexModules = import.meta.globEager('./vue/store/**/*.js')
 const modules = {}
 
-vuexModules.keys().forEach(key => {
-  const name = key.replace(/\.(\/|js)/g, '').replace(/\s/g, '-')
-  modules[name] = vuexModules(key).default
+Object.entries(vuexModules).forEach(([path, definition]) => {
+    const name = path.replace(/\/vue\/store/g, '').replace(/\.(\/|js)/g, '').replace(/\s/g, '-');
+
+    modules[name] = definition.default
 })
 
 const store = createStore({
@@ -32,37 +33,33 @@ const createVueApp = () => {
    * vue components
    * auto-import all vue components
    */
-  const vueComponents = require.context('./vue/components/', true, /\.(vue|js)$/)
+   const components = import.meta.globEager('./vue/components/**/*.vue')
 
-  vueComponents.keys().forEach(key => {
-    const component = vueComponents(key).default
+   Object.entries(components).forEach(([path, definition]) => {
+    const componentName = path.replace(/\/vue\/components/g, '').replace(/\.(\/|vue|js)/g, '').replace(/(\/|-|_|\s)\w/g, (match) => match.slice(1).toUpperCase());
 
-    // if a component has a name defined use the name, else use the path as the component name
-    const name = component.name
-      ? component.name
-      : key.replace(/\.(\/|vue|js)/g, '').replace(/(\/|-|_|\s)\w/g, (match) => match.slice(1).toUpperCase())
-
-    app.component(name, component)
+    app.component(componentName, definition.default)
   })
 
   /**
    * vue mixins
    * auto-register all mixins with a 'global' keyword in their filename
    */
-  const mixins = require.context('./vue/mixins/', true, /.*global.*\.js$/)
+//   const mixins = require.context('./vue/mixins/', true, /.*global.*\.js$/)
+  const mixins = import.meta.globEager('./vue/mixins/*.js')
 
-  mixins.keys().forEach(key => {
-    app.mixin(mixins(key).default)
+  Object.entries(mixins).forEach(([path, definition]) => {
+    app.mixin(definition.default)
   })
 
   /**
    * vue directives
    * auto-register all directives with a 'global' keyword in their filename
    */
-  const directives = require.context('./vue/directives/', true, /.*global.*\.js$/)
+  const directives = import.meta.globEager('./vue/directives/*.js')
 
-  directives.keys().forEach(key => {
-    const directive = directives(key).default
+  Object.entries(directives).forEach(([path, definition]) => {
+    const directive = definition.default
     app.directive(directive.name, directive.directive)
   })
 
